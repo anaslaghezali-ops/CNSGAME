@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChickNSter — Générateur de codes (usage interne)</title>
+<style>
+  :root{ --bg:#0A0A0A; --cream:#FFF8F0; --pink:#E8106D; --orange:#F8991C; --charcoal:#221016; --line:rgba(255,248,240,0.16); }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--cream);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 32px 18px 60px; display:flex; flex-direction:column; align-items:center;
+  }
+  .warn{
+    max-width: 640px; width:100%;
+    background: rgba(232,16,16,0.12); border:1px solid rgba(232,16,16,0.4);
+    border-radius: 12px; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; line-height:1.5;
+  }
+  h1{ font-size: 22px; margin: 0 0 4px; text-align:center; }
+  .sub{ color: rgba(255,248,240,0.6); font-size: 13.5px; margin: 0 0 28px; text-align:center; max-width:560px; }
+  .wrap{ width:100%; max-width: 640px; }
+  label{ display:block; font-size: 13px; font-weight:600; margin: 18px 0 6px; color: var(--orange); }
+  textarea{
+    width:100%; min-height: 220px; background: rgba(255,248,240,0.06); color: var(--cream);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px; font-family: monospace;
+    font-size: 13.5px; line-height:1.5; resize: vertical;
+  }
+  .hint{ font-size:12px; color: rgba(255,248,240,0.5); margin-top:6px; line-height:1.5; }
+  button{
+    margin-top: 18px; width:100%; padding: 14px; border:none; border-radius: 999px;
+    background: var(--pink); color: var(--cream); font-weight:700; font-size:15px; cursor:pointer;
+  }
+  button:active{ transform: scale(0.98); }
+  button.secondary{ background: var(--orange); color: var(--charcoal); margin-top:10px; }
+  .msg{ margin-top: 14px; padding: 12px 14px; border-radius:10px; font-size: 13.5px; display:none; }
+  .msg.show{ display:block; }
+  .msg.ok{ background: rgba(90,200,90,0.14); border:1px solid rgba(90,200,90,0.5); color:#9BEFA0; }
+  .msg.err{ background: rgba(232,16,16,0.12); border:1px solid rgba(232,16,16,0.5); color:#FF9B9B; }
+  .out-block{ display:none; }
+  .out-block.show{ display:block; }
+</style>
+</head>
+<body>
+
+  <div class="warn">
+    ⚠️ <b>Usage interne uniquement.</b> Ce fichier sert à générer <code>codes.js</code>.
+    Ne le mettez jamais en ligne, ne le partagez jamais avec vos clients ou votre personnel.
+    Gardez-le sur votre ordinateur, à part.
+  </div>
+
+  <h1>Générateur de codes ChickNSter</h1>
+  <p class="sub">Gérez ici la liste des codes gagnants en clair, puis générez le fichier <code>codes.js</code> obfusqué à déposer sur votre site (à la place de l'ancien).</p>
+
+  <div class="wrap">
+    <label>Liste actuelle des codes (un par ligne : <code>code,produit</code>)</label>
+    <textarea id="codesInput"></textarea>
+    <div class="hint">
+      Format : <code>1234,Boisson</code> — un code par ligne.<br>
+      Le produit doit être écrit exactement : <b>Waffle Fries</b>, <b>Boisson</b>, <b>Sundae</b> ou <b>Cookie</b>.<br>
+      Pour ajouter des codes, ajoutez simplement de nouvelles lignes à la fin.
+    </div>
+
+    <button id="generateBtn">Générer codes.js</button>
+    <div class="msg" id="statusMsg"></div>
+
+    <div class="out-block" id="outBlock">
+      <label>Contenu à copier dans codes.js (remplacez tout le fichier)</label>
+      <textarea id="outputArea" readonly></textarea>
+      <button class="secondary" id="downloadBtn">Télécharger codes.js</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var KEY = "CHICKNSTER2026";
+  var VALID_PRIZES = ["Waffle Fries","Boisson","Sundae","Cookie"];
+
+  // Pré-remplissage avec la liste actuellement déployée.
+  var CURRENT = [
+    ["2169","Boisson"],["2307","Boisson"],["2674","Boisson"],["3287","Boisson"],["3547","Boisson"],
+    ["3664","Boisson"],["3677","Boisson"],["4257","Boisson"],["4593","Boisson"],["4598","Boisson"],
+    ["4657","Boisson"],["4733","Boisson"],["4811","Boisson"],["5339","Boisson"],["5557","Boisson"],
+    ["6155","Boisson"],["6514","Boisson"],["6635","Boisson"],["6977","Boisson"],["7482","Boisson"],
+    ["7543","Boisson"],["8359","Boisson"],["9085","Boisson"],["9348","Boisson"],["9785","Boisson"],
+    ["1488","Cookie"],["2084","Cookie"],["2139","Cookie"],["2489","Cookie"],["2584","Cookie"],
+    ["3266","Cookie"],["4456","Cookie"],["4582","Cookie"],["5010","Cookie"],["5012","Cookie"],
+    ["5304","Cookie"],["5386","Cookie"],["5422","Cookie"],["5554","Cookie"],["5741","Cookie"],
+    ["5803","Cookie"],["6168","Cookie"],["6820","Cookie"],["7201","Cookie"],["7224","Cookie"],
+    ["7912","Cookie"],["8517","Cookie"],["9751","Cookie"],["9830","Cookie"],["9935","Cookie"],
+    ["1106","Sundae"],["1409","Sundae"],["1434","Sundae"],["1711","Sundae"],["2291","Sundae"],
+    ["2424","Sundae"],["2535","Sundae"],["2654","Sundae"],["2679","Sundae"],["3045","Sundae"],
+    ["3803","Sundae"],["4150","Sundae"],["4432","Sundae"],["4527","Sundae"],["4611","Sundae"],
+    ["4752","Sundae"],["5040","Sundae"],["5374","Sundae"],["5506","Sundae"],["6930","Sundae"],
+    ["7065","Sundae"],["7216","Sundae"],["7572","Sundae"],["8428","Sundae"],["8527","Sundae"],
+    ["1520","Waffle Fries"],["1525","Waffle Fries"],["1750","Waffle Fries"],["1916","Waffle Fries"],
+    ["2519","Waffle Fries"],["2824","Waffle Fries"],["3286","Waffle Fries"],["3340","Waffle Fries"],
+    ["3615","Waffle Fries"],["4483","Waffle Fries"],["4814","Waffle Fries"],["5333","Waffle Fries"],
+    ["5552","Waffle Fries"],["6313","Waffle Fries"],["6574","Waffle Fries"],["6881","Waffle Fries"],
+    ["6925","Waffle Fries"],["7227","Waffle Fries"],["7873","Waffle Fries"],["7924","Waffle Fries"],
+    ["8019","Waffle Fries"],["8573","Waffle Fries"],["9179","Waffle Fries"],["9279","Waffle Fries"],
+    ["9928","Waffle Fries"]
+  ];
+
+  var input = document.getElementById('codesInput');
+  input.value = CURRENT.map(function(c){ return c[0] + ',' + c[1]; }).join('\n');
+
+  var statusMsg = document.getElementById('statusMsg');
+  var outBlock = document.getElementById('outBlock');
+  var outputArea = document.getElementById('outputArea');
+
+  function showMsg(kind, text){
+    statusMsg.className = 'msg show ' + kind;
+    statusMsg.textContent = text;
+  }
+
+  function encode(str, key){
+    var bytes = new TextEncoder().encode(str);
+    var xored = new Uint8Array(bytes.length);
+    for (var i = 0; i < bytes.length; i++) xored[i] = bytes[i] ^ key.charCodeAt(i % key.length);
+    var bin = '';
+    for (var j = 0; j < xored.length; j++) bin += String.fromCharCode(xored[j]);
+    return btoa(bin);
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', function(){
+    var lines = input.value.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l.length; });
+    var codes = [];
+    var seen = {};
+
+    for (var i = 0; i < lines.length; i++) {
+      var parts = lines[i].split(',');
+      if (parts.length !== 2) {
+        showMsg('err', '❌ Ligne ' + (i+1) + ' invalide : "' + lines[i] + '" (format attendu : code,produit)');
+        outBlock.classList.remove('show');
+        return;
+      }
+      var code = parts[0].trim();
+      var prize = parts[1].trim();
+
+      if (!/^[0-9]{4}$/.test(code)) {
+        showMsg('err', '❌ Ligne ' + (i+1) + ' : le code "' + code + '" doit faire exactement 4 chiffres.');
+        outBlock.classList.remove('show');
+        return;
+      }
+      if (VALID_PRIZES.indexOf(prize) === -1) {
+        showMsg('err', '❌ Ligne ' + (i+1) + ' : produit "' + prize + '" inconnu. Utilisez : ' + VALID_PRIZES.join(', ') + '.');
+        outBlock.classList.remove('show');
+        return;
+      }
+      if (seen[code]) {
+        showMsg('err', '❌ Le code "' + code + '" apparaît plusieurs fois (ligne ' + (i+1) + ').');
+        outBlock.classList.remove('show');
+        return;
+      }
+      seen[code] = true;
+      codes.push({code: code, prize: prize});
+    }
+
+    if (!codes.length) {
+      showMsg('err', '❌ Aucun code valide trouvé.');
+      outBlock.classList.remove('show');
+      return;
+    }
+
+    var json = JSON.stringify(codes);
+    var encoded = encode(json, KEY);
+
+    var fileContent = '// ============================================================\n' +
+'// Donnees du programme de fidelite ChickNSter\n' +
+'// ============================================================\n' +
+'// Ce fichier ne doit PAS etre modifie a la main : les codes sont\n' +
+'// stockes sous une forme encodee pour ne pas etre lisibles a l\'oeil\n' +
+'// nu par un visiteur qui ouvrirait le code source de la page.\n' +
+'//\n' +
+'// Pour AJOUTER ou RETIRER des codes, utilisez le fichier\n' +
+'// "generateur-codes.html" fourni a part : il vous permet de gerer\n' +
+'// la liste en clair et de regenerer automatiquement ce fichier.\n' +
+'// Ne partagez jamais generateur-codes.html avec vos clients.\n' +
+'// ============================================================\n' +
+'(function(){\n' +
+'  var _k = "' + KEY + '";\n' +
+'  var _e = "' + encoded + '";\n' +
+'  function _decode(b64, key){\n' +
+'    var bin = atob(b64);\n' +
+'    var bytes = new Uint8Array(bin.length);\n' +
+'    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);\n' +
+'    var out = new Uint8Array(bytes.length);\n' +
+'    for (var j = 0; j < bytes.length; j++) out[j] = bytes[j] ^ key.charCodeAt(j % key.length);\n' +
+'    var str = \'\';\n' +
+'    for (var k = 0; k < out.length; k++) str += String.fromCharCode(out[k]);\n' +
+'    return decodeURIComponent(escape(str));\n' +
+'  }\n' +
+'  window.VALID_CODES = JSON.parse(_decode(_e, _k));\n' +
+'})();\n';
+
+    outputArea.value = fileContent;
+    outBlock.classList.add('show');
+    showMsg('ok', '✅ ' + codes.length + ' codes générés avec succès. Copiez le contenu ci-dessous dans codes.js, ou téléchargez-le directement.');
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', function(){
+    if (!outputArea.value) return;
+    var blob = new Blob([outputArea.value], {type: 'text/javascript'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'codes.js';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
+</body>
+</html>
