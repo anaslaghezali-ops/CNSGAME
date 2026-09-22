@@ -571,7 +571,7 @@
     spinning = true;
     spinBtn.disabled = true;
 
-    var isWin = Math.random() < 0.2; // 2 chances sur 10, quel que soit le nombre de cases cadeau
+    var isWin = Math.random() < 0.9; // 9 chances sur 10, quel que soit le nombre de cases cadeau
     var slotIndex, prize;
     if (isWin) {
       var g = GIFT_SLOTS[Math.floor(Math.random() * GIFT_SLOTS.length)];
