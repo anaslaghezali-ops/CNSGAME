@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ChickNSter — Caisse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A0A0A;
+    --bg-2: #1A0611;
+    --cream: #FFF8F0;
+    --pink: #E8106D;
+    --orange: #F8991C;
+    --charcoal: #221016;
+    --line: rgba(255,248,240,0.14);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root:not([data-theme="light"]){ --bg:#0A0A0A; --cream:#FFF8F0; }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg:#0A0A0A; --cream:#FFF8F0; }
+  }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); height:100%; }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    min-height:100%;
+    background:
+      radial-gradient(circle, rgba(232,16,109,0.35) 1px, transparent 1.6px) 0 0/16px 16px,
+      radial-gradient(circle at 50% 0%, var(--bg-2) 0%, var(--bg) 60%);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding: 48px 18px 40px;
+    overflow-x:hidden;
+  }
+
+  .crown-row{
+    font-size: 26px;
+    margin-bottom: 6px;
+  }
+  .title{
+    font-family:'Bangers', 'Bebas Neue', sans-serif;
+    font-weight:400;
+    font-size: 34px;
+    text-align:center;
+    margin: 0 0 8px;
+  }
+  .sub{
+    text-align:center;
+    max-width: 320px;
+    font-size: 14.5px;
+    line-height:1.5;
+    color: rgba(255,248,240,0.7);
+    margin: 0 0 30px;
+  }
+
+  .wrap{
+    width: 100%;
+    max-width: 360px;
+  }
+  .input{
+    width:100%;
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 40px;
+    letter-spacing: 10px;
+    text-align:center;
+    padding: 18px 10px;
+    border-radius: 14px;
+    border: 2px solid var(--line);
+    background: rgba(255,248,240,0.06);
+    color: var(--cream);
+    margin-bottom: 16px;
+  }
+  .input:focus{ outline:none; border-color: var(--pink); }
+
+  button{
+    font-family:'DM Sans', sans-serif;
+    font-weight:700;
+    font-size: 16px;
+    border:none;
+    border-radius: 999px;
+    padding: 16px 22px;
+    width:100%;
+    cursor:pointer;
+    background: var(--pink);
+    color: var(--cream);
+    box-shadow: 0 8px 18px rgba(232,16,109,0.4);
+    transition: transform .15s ease;
+  }
+  button:active{ transform: scale(0.97); }
+
+  .result{
+    margin-top: 22px;
+    padding: 18px;
+    border-radius: 16px;
+    text-align:center;
+    font-size: 16px;
+    line-height:1.5;
+    font-weight:600;
+    display:none;
+  }
+  .result.show{ display:block; }
+  .result.ok{
+    background: rgba(90,200,90,0.14);
+    border: 1px solid rgba(90,200,90,0.5);
+    color: #9BEFA0;
+  }
+  .result.err{
+    background: rgba(232,16,16,0.12);
+    border: 1px solid rgba(232,16,16,0.5);
+    color: #FF9B9B;
+  }
+
+  .stats{
+    margin-top: 26px;
+    text-align:center;
+    font-size: 12.5px;
+    color: rgba(255,248,240,0.45);
+  }
+  .reset{
+    margin-top: 4px;
+    background:none;
+    border:none;
+    color: rgba(255,248,240,0.35);
+    font-size: 11.5px;
+    text-decoration: underline;
+    cursor:pointer;
+    padding: 6px;
+    width:auto;
+    box-shadow:none;
+  }
+</style>
+</head>
+<body>
+
+  <div class="crown-row">👑</div>
+  <div class="title">Espace caisse</div>
+  <p class="sub">Tapez le code à 4 chiffres montré par le client, puis validez. Un code ne peut être utilisé qu'une seule fois.</p>
+
+  <div class="wrap">
+    <form id="caisseForm">
+      <input class="input" id="caisseInput" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="off">
+      <button type="submit">Vérifier le code</button>
+    </form>
+    <div class="result" id="caisseResult"></div>
+    <div class="stats" id="caisseStats"></div>
+  </div>
+
+<script src="codes.js"></script>
+<script>
+(function(){
+  // VALID_CODES est défini dans codes.js (chargé juste avant ce script).
+  // Doit être EXACTEMENT le même fichier codes.js que celui utilisé par
+  // la page client (chicknster-roulette.html).
+  var USED_CODES_KEY = 'chicknster_used_codes';
+
+  var form = document.getElementById('caisseForm');
+  var input = document.getElementById('caisseInput');
+  var resultBox = document.getElementById('caisseResult');
+  var statsBox = document.getElementById('caisseStats');
+
+  function readUsed(){
+    try{
+      var raw = localStorage.getItem(USED_CODES_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function writeUsed(used){
+    try{ localStorage.setItem(USED_CODES_KEY, JSON.stringify(used)); }catch(e){}
+  }
+  function renderStats(){
+    var used = readUsed();
+    var count = Object.keys(used).length;
+    statsBox.textContent = count + " / " + VALID_CODES.length + " codes utilisés sur cet appareil";
+  }
+  renderStats();
+
+  function showResult(kind, message){
+    resultBox.className = 'result show ' + kind;
+    resultBox.textContent = message;
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var code = (input.value || '').trim();
+
+    if (!/^[0-9]{4}$/.test(code)) {
+      showResult('err', '⚠️ Entrez un code à 4 chiffres.');
+      return;
+    }
+
+    var entry = VALID_CODES.find(function(c){ return c.code === code; });
+    if (!entry) {
+      showResult('err', '❌ Code non valable — il ne correspond à aucun code gagnant du programme.');
+      return;
+    }
+
+    var used = readUsed();
+    if (used[code]) {
+      var when = new Date(used[code].usedAt || used[code]);
+      showResult('err', '❌ Ce code a déjà été utilisé' + (isNaN(when) ? '.' : ' le ' + when.toLocaleDateString('fr-FR') + ' à ' + when.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + '.'));
+      return;
+    }
+
+    used[code] = { usedAt: new Date().toISOString(), prize: entry.prize };
+    writeUsed(used);
+    showResult('ok', '✅ Code valide — gagné : ' + entry.prize + '. Vous pouvez remettre le cadeau au client.');
+    renderStats();
+    input.value = '';
+  });
+})();
+</script>
+</body>
+</html>
