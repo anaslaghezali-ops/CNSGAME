@@ -571,10 +571,19 @@
     spinning = true;
     spinBtn.disabled = true;
 
-    var isWin = Math.random() < 0.4; // 2 chances sur 10, quel que soit le nombre de cases cadeau
+    // Chances sur 100 pour chaque cadeau (le reste = "Pas de chance").
+    // Ordre : Waffle Fries, Boisson, Sundae, Cookie (comme PRIZES).
+    var WIN_CHANCES = [10, 10, 5, 10];
+    var r = Math.random() * 100;
+    var g = null;
+    for (var w = 0; w < GIFT_SLOTS.length; w++) {
+      var chance = WIN_CHANCES[GIFT_SLOTS[w].prizeIndex];
+      if (r < chance) { g = GIFT_SLOTS[w]; break; }
+      r -= chance;
+    }
+    var isWin = !!g;
     var slotIndex, prize;
     if (isWin) {
-      var g = GIFT_SLOTS[Math.floor(Math.random() * GIFT_SLOTS.length)];
       slotIndex = g.index;
       prize = PRIZES[g.prizeIndex];
     } else {
